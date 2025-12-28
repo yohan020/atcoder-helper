@@ -31,9 +31,14 @@ export function activate(context: vscode.ExtensionContext) {
 			const response = await axios.get(url);
 			const $ = cheerio.load(response.data);
 
-			// 4. 일본어(lang-ja) 영역만 선택 (중복 방지)
-			let targetArea = $('lang-ja');
-			if (targetArea.length == 0) { targetArea = $('body'); }
+			// 중복 입출력 로딩을 방지하기 위한 로직
+			// 일본어 태그가 존재하면, 영어 태그 아예 삭제
+			if ($('.lang-ja').length > 0) {
+				$('.lang-en').remove();
+			}
+
+			// 문제 본문 영역 안에서만 찾도록 범위를 좁힘
+			const targetArea = $('#task-statement');
 
 			let inputCount = 1;
 			let outputCount = 1;
