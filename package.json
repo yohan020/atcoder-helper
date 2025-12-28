@@ -14,8 +14,51 @@
   "contributes": {
     "commands": [
       {
-        "command": "atcoder-helper.helloWorld",
-        "title": "Hello World"
+        "command": "atcoder-helper.createFile",
+        "title": "Create AtCoder File"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "atcoder-helper.createFile",
+        "key": "ctrl+alt+n",
+        "mac": "cmd+alt+n",
+        "when": "editorTextFocus"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "atcoder-helper.createFile",
+          "group": "navigation",
+          "when": "editorFocus"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "atcoder-helper.createFile",
+          "group": "navigation"
+        }
+      ]
+    },
+    "problemMatchers": [
+      {
+        "name": "esbuild-watch",
+        "owner": "esbuild",
+        "fileLocation": "relative",
+        "pattern": {
+          "regexp": "^([^\\s].*):(\\d+):(\\d+):\\s+(error|warning):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^\\s*build started...",
+          "endsPattern": "^\\s*build finished"
+        }
       }
     ]
   },
