@@ -1,7 +1,7 @@
 {
   "name": "atcoder-helper",
   "displayName": "atcoder-helper",
-  "description": "",
+  "description": "AtCoder helper extension",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.104.0"
@@ -14,33 +14,60 @@
   "contributes": {
     "commands": [
       {
+        "command": "atcoder-helper.parseProblem",
+        "title": "AtCoder: Parse Test Cases"
+      },
+      {
+        "command": "atcoder-helper.runTest",
+        "title": "AtCoder: Run Python Tests"
+      },
+      {
         "command": "atcoder-helper.createFile",
         "title": "AtCoder: Create Solution File"
       }
     ],
     "keybindings": [
       {
-        "command": "atcoder-helper.createFile",
-        "key": "ctrl+alt+n",
-        "mac": "cmd+alt+n",
-        "when": "editorTextFocus"
+        "command": "atcoder-helper.runTest",
+        "key": "ctrl+alt+t",
+        "mac": "cmd+alt+t",
+        "when": "editorTextFocus && resourceExtname == .py"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "atcoder-helper.createFile",
+          "command": "atcoder-helper.parseProblem",
           "group": "navigation",
           "when": "editorFocus"
-        }
-      ],
-      "explorer/context": [
+        },
         {
-          "command": "atcoder-helper.createFile",
-          "group": "navigation"
+          "command": "atcoder-helper.runTest",
+          "group": "navigation",
+          "when": "editorFocus && resourceExtname == .py"
         }
       ]
-    }
+    },
+    "problemMatchers": [
+      {
+        "name": "esbuild-watch",
+        "owner": "esbuild",
+        "fileLocation": "relative",
+        "pattern": {
+          "regexp": "^([^\\s].*):(\\d+):(\\d+):\\s+(error|warning):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^\\s*build started...",
+          "endsPattern": "^\\s*build finished"
+        }
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
