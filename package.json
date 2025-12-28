@@ -4,7 +4,7 @@
   "description": "",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.107.0"
+    "vscode": "^1.104.0"
   },
   "categories": [
     "Other"
@@ -15,7 +15,7 @@
     "commands": [
       {
         "command": "atcoder-helper.createFile",
-        "title": "Create AtCoder File"
+        "title": "AtCoder: Create Solution File"
       }
     ],
     "keybindings": [
@@ -40,27 +40,7 @@
           "group": "navigation"
         }
       ]
-    },
-    "problemMatchers": [
-      {
-        "name": "esbuild-watch",
-        "owner": "esbuild",
-        "fileLocation": "relative",
-        "pattern": {
-          "regexp": "^([^\\s].*):(\\d+):(\\d+):\\s+(error|warning):\\s+(.*)$",
-          "file": 1,
-          "line": 2,
-          "column": 3,
-          "severity": 4,
-          "message": 5
-        },
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": "^\\s*build started...",
-          "endsPattern": "^\\s*build finished"
-        }
-      }
-    ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
@@ -77,7 +57,7 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.107.0",
+    "@types/vscode": "^1.104.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
     "typescript-eslint": "^8.48.1",
