@@ -12,6 +12,24 @@
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "atcoder-sidebar-view",
+          "title": "AtCoder Helper",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "atcoder-sidebar-view": [
+        {
+          "type": "webview",
+          "id": "atcoder.sidebar",
+          "name": "AtCoder Menu"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "atcoder-helper.parseProblem",
