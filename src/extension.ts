@@ -27,7 +27,7 @@ interface SampleData {
 class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 	private _view?: vscode.WebviewView;
 
-	// 핵심 : 파일 대신 여기에 예제 데이터를 임시 저장
+	// 핵심 : 여기에 예제 데이터를 임시 저장
 	private _currentSamples: SampleData[] = [];
 	private _currentProblemUrl: string = '';
 
