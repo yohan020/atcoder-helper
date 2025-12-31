@@ -4,6 +4,7 @@ import * as path from 'path';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import * as cp from "child_process";
+import { translate } from 'google-translate-api-x'; // 번역 라이브러리
 
 // 👇 언어 팩 가져오기
 import { getLocalizedMessages } from './locale';
@@ -30,10 +31,27 @@ interface SampleData {
 	id: number;
 }
 
+interface ProblemContent {
+	ja: string; // 일본어 원문
+	en: string; // 영어 원문
+	ko?: string; // 한국어 번역본
+}
+
+interface TaskData {
+	label: string;
+	url: string;
+}
+
 class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 	private _view?: vscode.WebviewView;
+
+	// 💾 상태 저장소
 	private _currentSamples: SampleData[] = [];
 	private _currentProblemUrl: string = '';
+	private _currentTasks: TaskData[] = []; // 현재 조회된 문제 목록 저장
+
+	// 🌐 언어별 문제 본문 저장 (매 문제마다 초기화)
+	private _currentContent: ProblemContent = { ja: '', en: '' };
 
 	constructor(private readonly _extensionUri: vscode.Uri) { }
 
@@ -59,6 +77,9 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 					break;
 				case 'selectProblem':
 					await this.selectProblem(data.url);
+					break;
+				case 'changeProblemLanguage':
+					await this.changeProblemDisplayLang(data.lang);
 					break;
 				case 'createSourceFile':
 					await this.createSourceFile(data.language);
@@ -107,17 +128,34 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 		}
 	}
 
-	// ---- 기능 2: 문제 선택 및 데이터 파싱 ----
+	// ---- 기능 2: 문제 선택 및 데이터 파싱 (일본어/영어 분리 저장)----
 	private async selectProblem(url: string) {
 		const t = getLocalizedMessages();
 		try {
 			const response = await axios.get(url);
 			const $ = cheerio.load(response.data);
-			if ($('.lang-ja').length > 0) { $('.lang-en').remove(); }
 
-			const problemHtml = $('#task-statement').html();
+			// 1. 문제 본문 파싱 (언어별 분리)
+			const taskStatement = $('#task-statement');
+
+			// 초기화
+			this._currentContent = { ja: '', en: '' };
 			this._currentProblemUrl = url;
 
+			// AtCoder는 보통 span.lang-ja / span.lang-en으로 구분
+			const langJa = taskStatement.find('.lang-ja').html();
+			const langEn = taskStatement.find('.lang-en').html();
+
+			if (langJa && langEn) {
+				// 신규 문제 포맷 (다국어 지원)
+				this._currentContent = { ja: langJa, en: langEn };
+			} else {
+				// 구형 문제 포맷 (구분없음, 그냥 통쨰로 저장)
+				const raw = taskStatement.html() || '';
+				this._currentContent = { ja: raw, en: raw }; // 기본을 일본어로 취급, 영어도 똑같이 저장
+			}
+
+			// 2. 예제 입출력 파싱
 			this._currentSamples = [];
 			let inputCount = 1;
 			let outputCount = 1;
@@ -144,17 +182,106 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 				}
 			}
 
-			if (problemHtml) {
-				this._view?.webview.postMessage({
-					type: 'displayProblem',
-					content: problemHtml,
-					sampleCount: this._currentSamples.length,
-					btnText: t.ui_testBtnRunning
-				});
-			}
+			// 3. 화면에 전송 (기본값 : 일본어)
+			this._view?.webview.postMessage({
+				type: 'displayProblem',
+				content: this._currentContent.ja,
+				sampleCount: this._currentSamples.length,
+				enableLanguageSelect: true // 언어 선택창 활성화
+			});
 		} catch (error) {
 			vscode.window.showErrorMessage(t.detailError);
 		}
+	}
+
+	// 🔄 [중요] 문제 표시 언어 변경 로직 (cheerio DOM 순회 방식)
+	private async changeProblemDisplayLang(lang: string) {
+		if (!this._currentContent.ja) return;
+
+		let contentToShow = '';
+
+		if (lang === 'ja') {
+			contentToShow = this._currentContent.ja;
+		} else if (lang === 'en') {
+			contentToShow = this._currentContent.en;
+		} else if (lang === 'ko') {
+			if (this._currentContent.ko) {
+				contentToShow = this._currentContent.ko;
+			} else {
+				vscode.window.withProgress({
+					location: vscode.ProgressLocation.Notification,
+					title: "한국어로 번역 중입니다... (1분 정도 소요)",
+					cancellable: false
+				}, async () => {
+					try {
+						// cheerio로 HTML 파싱
+						const $ = cheerio.load(this._currentContent.ja);
+
+						// 번역하지 않을 태그들 (수식, 코드 등)
+						const skipTags = new Set(['var', 'code', 'pre', 'script', 'style']);
+
+						// 텍스트 노드만 수집
+						const textNodes: { node: any; text: string }[] = [];
+
+						const collectTextNodes = (element: any) => {
+							$(element).contents().each((_, child) => {
+								if (child.type === 'text') {
+									const text = $(child).text().trim();
+									if (text.length > 0) {
+										textNodes.push({ node: child, text: text });
+									}
+								} else if (child.type === 'tag') {
+									// skipTags에 해당하는 태그는 내부 순회 안함
+									if (!skipTags.has(child.name.toLowerCase())) {
+										collectTextNodes(child);
+									}
+								}
+							});
+						};
+
+						// body 또는 root에서 시작
+						collectTextNodes($.root());
+
+						// 각 텍스트 노드를 개별적으로 번역
+						for (const item of textNodes) {
+							try {
+								const result = await translate(item.text, { to: 'ko' });
+								const translatedText = result.text;
+
+								// 원본 공백 유지를 위해 앞뒤 공백 보존
+								const originalFull = $(item.node).text();
+								const leadingSpace = originalFull.match(/^\s*/)?.[0] || '';
+								const trailingSpace = originalFull.match(/\s*$/)?.[0] || '';
+								$(item.node).replaceWith(leadingSpace + translatedText.trim() + trailingSpace);
+							} catch {
+								// 개별 번역 실패 시 원문 유지
+							}
+						}
+
+						const translatedHtml = $.html();
+						this._currentContent.ko = translatedHtml;
+						contentToShow = translatedHtml;
+
+					} catch (e) {
+						vscode.window.showErrorMessage('번역 실패! 원문을 표시합니다.');
+						contentToShow = this._currentContent.ja;
+					}
+
+					// 번역 완료 후 웹뷰 업데이트
+					this._view?.webview.postMessage({
+						type: 'updateProblemContent',
+						content: contentToShow
+					});
+				});
+				return; // withProgress 안에서 처리하므로 여기서 리턴
+			}
+		}
+
+		// ko가 아니거나 캐시된 ko가 있을 경우 바로 업데이트
+		this._view?.webview.postMessage({
+			type: 'updateProblemContent',
+			content: contentToShow
+		});
 	}
 
 	// ---- 기능 3: 소스 코드 파일 생성 ----
@@ -333,9 +460,8 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 		proc.on('error', err => reject(err));
 	}
 
-	// --- HTML 구성 ---
 	private _getHtmlForWebview(webview: vscode.Webview) {
-		const t = getLocalizedMessages(); // 언어 팩 가져오기
+		const t = getLocalizedMessages();
 
 		return `<!DOCTYPE html>
         <html lang="en">
@@ -354,9 +480,35 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
                 .task-btn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: var(--vscode-editor-background); border: 1px solid var(--vscode-widget-border); cursor: pointer; }
                 .task-btn:hover { background: var(--vscode-list-hoverBackground); }
                 .task-btn.active { background: var(--vscode-button-background); color: white; }
-                #problemView { flex: 1; min-height: 200px; max-height: 400px; overflow-y: auto; background: var(--vscode-editor-background); border: 1px solid var(--vscode-widget-border); padding: 10px; font-size: 0.9em; }
+                
+                #problemContainer { 
+                    flex: 1; 
+                    display: flex; 
+                    flex-direction: column; 
+                    border: 1px solid var(--vscode-widget-border); 
+                    min-height: 200px;
+                    max-height: 400px;
+                }
+                
+                /* ✨ 헤더: 기본 상태는 숨김(display: none) 처리 */
+                #problemHeader {
+                    display: none; 
+                    padding: 5px;
+                    background: var(--vscode-editor-background);
+                    border-bottom: 1px solid var(--vscode-widget-border);
+                    justify-content: flex-end;
+                }
+                
+                #problemView { 
+                    flex: 1;
+                    overflow-y: auto; 
+                    padding: 10px; 
+                    font-size: 0.9em;
+                    background: var(--vscode-editor-background);
+                }
                 #problemView h3 { font-size: 1.1em; margin-top: 10px; border-bottom: 1px solid #555; }
                 #problemView pre { background: #333; color: #fff; padding: 5px; overflow-x: auto; }
+                
                 .actions { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
                 .action-row { display: flex; gap: 5px; }
                 .action-btn { flex: 1; padding: 8px; font-weight: bold; }
@@ -371,11 +523,23 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
                 <input type="text" id="contestId" placeholder="${t.ui_searchPlaceholder}" />
                 <button id="searchBtn">${t.ui_searchBtn}</button>
             </div>
+
             <div id="taskList"></div>
-            <div id="problemView"><p style="color: #888; text-align: center;">${t.ui_selectProblemPrompt}</p></div>
+
+            <div id="problemContainer">
+                <div id="problemHeader">
+                    <select id="problemLangSelect" style="font-size: 0.8em; padding: 2px;">
+                        <option value="ja">日本語 (Original)</option>
+                        <option value="en">English</option>
+                        <option value="ko">한국어 (Auto Translate)</option>
+                    </select>
+                </div>
+                <div id="problemView"><p style="color: #888; text-align: center;">${t.ui_selectProblemPrompt}</p></div>
+            </div>
+
             <div class="actions">
                 <div class="action-row">
-                    <select id="langSelect" style="flex: 0.4;">
+                    <select id="codeLangSelect" style="flex: 0.4;">
                         <option value="python">Python</option>
                         <option value="cpp">C++</option>
                         <option value="c">C</option>
@@ -385,22 +549,34 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
                 <button id="testBtn" class="action-btn btn-blue" disabled>${t.ui_testBtn}</button>
                 <button id="openWebBtn" class="action-btn btn-gray" style="display:none;">${t.ui_webBtn}</button>
             </div>
+
             <script>
                 const vscode = acquireVsCodeApi();
+
                 document.getElementById('searchBtn').addEventListener('click', () => {
                     const id = document.getElementById('contestId').value;
                     if(id) vscode.postMessage({ command: 'loadContest', contestId: id });
                 });
+
+                // 문제 언어 변경 이벤트 리스너 (JA/EN/KO)
+                const probLangSelect = document.getElementById('problemLangSelect');
+                probLangSelect.addEventListener('change', () => {
+                    vscode.postMessage({ command: 'changeProblemLanguage', lang: probLangSelect.value });
+                });
+
                 document.getElementById('createBtn').addEventListener('click', () => {
-                    const lang = document.getElementById('langSelect').value;
+                    const lang = document.getElementById('codeLangSelect').value;
                     vscode.postMessage({ command: 'createSourceFile', language: lang });
                 });
+
                 document.getElementById('testBtn').addEventListener('click', () => {
                     vscode.postMessage({ command: 'runTest' });
                 });
+
                 document.getElementById('openWebBtn').addEventListener('click', () => {
                     vscode.postMessage({ command: 'openBrowser' });
                 });
+
                 window.addEventListener('message', event => {
                     const message = event.data;
                     switch (message.type) {
@@ -415,18 +591,39 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
                                     vscode.postMessage({ command: 'selectProblem', url: task.url });
                                     document.querySelectorAll('.task-btn').forEach(b => b.classList.remove('active'));
                                     btn.classList.add('active');
+                                    
                                     document.getElementById('problemView').innerHTML = '<p>${t.ui_loading}</p>';
                                     document.getElementById('openWebBtn').style.display = 'none';
+                                    
+                                    // ✨ 문제 선택 시: 1. 언어 선택창 보이기 2. 값은 일본어로 리셋
+                                    document.getElementById('problemHeader').style.display = 'flex';
+                                    document.getElementById('problemLangSelect').value = 'ja';
                                 };
                                 listDiv.appendChild(btn);
                             });
+                            
+                            // 새 대회 로드 시, 문제 보는 창의 언어 선택은 다시 숨김
+                            document.getElementById('problemHeader').style.display = 'none';
+                            document.getElementById('problemView').innerHTML = '<p style="color: #888; text-align: center;">${t.ui_selectProblemPrompt}</p>';
                             break;
+
                         case 'displayProblem':
+                            // 문제 내용 렌더링
                             document.getElementById('problemView').innerHTML = message.content;
+                            
+                            // 문제 선택창 확실하게 표시
+                            document.getElementById('problemHeader').style.display = 'flex';
+
                             const testBtn = document.getElementById('testBtn');
                             testBtn.disabled = false;
                             testBtn.innerText = message.btnText + ' (' + message.sampleCount + ')';
+                            
                             document.getElementById('openWebBtn').style.display = 'block';
+                            break;
+
+                        case 'updateProblemContent':
+                            // ✨ 언어 변경 시, 본문 내용만 갈아끼우기 (갱신 로직)
+                            document.getElementById('problemView').innerHTML = message.content;
                             break;
                     }
                 });
@@ -438,7 +635,21 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 	// 언어 설정 변경 감지시 강제로 다시 그리는 함수
 	public refresh() {
 		if (this._view) {
+			const t = getLocalizedMessages();
 			this._view.webview.html = this._getHtmlForWebview(this._view.webview);
+
+			// 데이터 복구
+			if (this._currentTasks.length > 0) {
+				this._view.webview.postMessage({ type: 'updateTaskList', tasks: this._currentTasks });
+			}
+			if (this._currentContent.ja) {
+				this._view.webview.postMessage({
+					type: 'displayProblem',
+					content: this._currentContent.ja, // 기본 리셋
+					sampleCount: this._currentSamples.length,
+					btnText: t.ui_testBtnRunning
+				});
+			}
 		}
 	}
 }
