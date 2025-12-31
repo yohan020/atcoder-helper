@@ -1,0 +1,68 @@
+import * as path from 'path';
+import * as cp from 'child_process';
+
+// 프로세스 입출력 공통 처리
+function handleProcess(
+    proc: cp.ChildProcessWithoutNullStreams,
+    input: string,
+    resolve: (value: string) => void,
+    reject: (reason?: any) => void
+) {
+    let stdout = '', stderr = '';
+    try {
+        proc.stdin.write(input);
+        proc.stdin.end();
+    } catch (e) { reject(e); }
+    proc.stdout.on('data', d => stdout += d);
+    proc.stderr.on('data', d => stderr += d);
+    proc.on('close', code => {
+        if (code === 0) resolve(stdout);
+        else reject(new Error(stderr));
+    });
+    proc.on('error', err => reject(err));
+}
+
+// Python 실행
+export function runPython(scriptPath: string, input: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const cmd = process.platform === 'win32' ? 'python' : 'python3';
+        const proc = cp.spawn(cmd, [scriptPath]);
+        handleProcess(proc, input, resolve, reject);
+    });
+}
+
+// C/C++ 컴파일
+export function compileCode(sourcePath: string, ext: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const dir = path.dirname(sourcePath);
+        const fileName = path.basename(sourcePath, ext);
+        const outName = process.platform === 'win32' ? `${fileName}.exe` : fileName;
+        const outPath = path.join(dir, outName);
+
+        let cmd = 'g++';
+        let args: string[] = [];
+        if (ext.toLowerCase() === '.c') {
+            cmd = 'gcc';
+            args = [sourcePath, '-o', outPath, '-O2', '-lm'];
+        } else {
+            cmd = 'g++';
+            args = [sourcePath, '-o', outPath, '-std=c++17', '-O2'];
+        }
+
+        cp.execFile(cmd, args, (error, stdout, stderr) => {
+            if (error) {
+                reject(new Error(stderr || stdout || error.message));
+            } else {
+                resolve(outPath);
+            }
+        });
+    });
+}
+
+// 컴파일된 실행 파일 실행
+export function runExecutable(exePath: string, input: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const proc = cp.spawn(exePath);
+        handleProcess(proc, input, resolve, reject);
+    });
+}
