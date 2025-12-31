@@ -408,7 +408,6 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
                 <input type="text" id="contestId" placeholder="386" />
                 <button id="searchBtn">조회</button>
             </div>
-
             <div id="taskList"></div>
 
             <div id="problemView"><p style="color: #888; text-align: center;">문제를 선택하세요.</p></div>
@@ -427,7 +426,6 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
                 
                 <button id="openWebBtn" class="action-btn btn-gray" style="display:none;">🌐 웹사이트에서 보기 (Original)</button>
             </div>
-
             <script>
                 const vscode = acquireVsCodeApi();
 
@@ -470,7 +468,6 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
                                 listDiv.appendChild(btn);
                             });
                             break;
-
                         case 'displayProblem':
                             document.getElementById('problemView').innerHTML = message.content;
                             const testBtn = document.getElementById('testBtn');
