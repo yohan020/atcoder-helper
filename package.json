@@ -32,6 +32,11 @@
             "Japanese (日本語)"
           ],
           "description": "Select the language for the AtCoder Helper extension"
+        },
+        "atcoder-helper.geminiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Gemini API Key for high-quality Korean translation. Get your key from https://aistudio.google.com/apikey"
         }
       }
     },
