@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import { translate } from 'google-translate-api-x';
+import { getLocalizedMessages } from './locale';
 
 /**
  * 🤖 Gemini API를 사용한 번역 함수
@@ -13,7 +14,7 @@ import { translate } from 'google-translate-api-x';
 export async function translateWithGemini(htmlContent: string, apiKey: string): Promise<string> {
     // 1. API 키 유효성 검사 - 빈 값이면 에러 발생
     if (!apiKey || apiKey.trim() === '') {
-        throw new Error('API 키가 비어있습니다.');
+        throw new Error(getLocalizedMessages().apiKeyEmpty);
     }
 
     // 2. Gemini API 엔드포인트 URL 구성
@@ -129,4 +130,68 @@ export async function translateWithGoogle(htmlContent: string): Promise<string> 
 
     // 7. 번역 완료된 HTML 반환
     return $.html();
+}
+
+/**
+ * 🤖 ChatGPT API를 사용한 번역 함수
+ * - HTML 구조를 유지하면서 한국어로 번역
+ * 
+ * @param htmlContent 번역할 HTML 콘텐츠
+ * @param apiKey OpenAI API 키
+ * @returns 번역된 HTML 문자열
+ */
+export async function translateWithChatGPT(htmlContent: string, apiKey: string): Promise<string> {
+    if (!apiKey || apiKey.trim() === '') {
+        throw new Error(getLocalizedMessages().apiKeyEmpty);
+    }
+
+    const url = 'https://api.openai.com/v1/chat/completions';
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: 'gpt-4o-mini',  // 또는 'gpt-3.5-turbo'
+            messages: [
+                {
+                    role: 'system',
+                    content: `당신은 HTML 번역 전문가입니다. 다음 규칙을 따르세요:
+1. HTML 태그 구조는 절대 변경하지 마세요
+2. <var>, <code>, <pre> 태그 내부의 내용은 번역하지 마세요
+3. 수학적 표현과 숫자는 그대로 유지하세요
+4. 자연스러운 한국어로 번역하세요
+5. 번역 결과만 출력하세요`
+                },
+                {
+                    role: 'user',
+                    content: htmlContent
+                }
+            ],
+            temperature: 0.3,
+            max_tokens: 4096
+        })
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`OpenAI API error: ${response.status} - ${errorBody}`);
+    }
+
+    const data = await response.json() as {
+        choices: Array<{
+            message?: {
+                content?: string
+            }
+        }>
+    };
+
+    const translatedText = data.choices[0]?.message?.content;
+    if (!translatedText) {
+        throw new Error('No translation result from ChatGPT');
+    }
+
+    return translatedText;
 }
