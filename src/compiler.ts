@@ -59,10 +59,36 @@ export function compileCode(sourcePath: string, ext: string): Promise<string> {
     });
 }
 
-// 컴파일된 실행 파일 실행
+// 컴파일된 실행 파일 실행 (C/C++)
 export function runExecutable(exePath: string, input: string): Promise<string> {
     return new Promise((resolve, reject) => {
         const proc = cp.spawn(exePath);
+        handleProcess(proc, input, resolve, reject);
+    });
+}
+
+// Java 컴파일
+export function compileJava(sourcePath: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const args = [sourcePath, '-encoding', 'UTF-8'];
+
+        cp.execFile('javac', args, (error, stdout, stderr) => {
+            if (error) {
+                reject(new Error(stderr || stdout || error.message));
+            } else {
+                resolve(sourcePath);
+            }
+        });
+    });
+}
+
+// Java 실행
+export function runJava(sourcePath: string, input: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const dir = path.dirname(sourcePath);
+        const mainClass = path.basename(sourcePath, '.java');
+
+        const proc = cp.spawn('java', ['-cp', dir, '-Dfile.encoding=UTF-8', mainClass]);
         handleProcess(proc, input, resolve, reject);
     });
 }

@@ -11,10 +11,10 @@ export function getHtmlForWebview(): string {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>AtCoder Helper</title>
             <style>
-                body { padding: 10px; font-family: sans-serif; display: flex; flex-direction: column; gap: 10px; }
-                .search-box { display: flex; gap: 5px; }
-                input { flex: 1; padding: 5px; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); }
-                button, select { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 6px 12px; cursor: pointer; }
+                body { padding: 8px; font-family: sans-serif; display: flex; flex-direction: column; gap: 8px; }
+                .search-box { display: flex; gap: 3px; font-size: 0.85em; }
+                input { flex: 1; padding: 4px; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); }
+                button, select { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 8px; cursor: pointer; }
                 button:hover, select:hover { background: var(--vscode-button-hoverBackground); }
                 select { padding: 6px; outline: none; border: 1px solid var(--vscode-widget-border); }
                 #taskList { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
@@ -83,6 +83,7 @@ export function getHtmlForWebview(): string {
                         <option value="python">Python</option>
                         <option value="cpp">C++</option>
                         <option value="c">C</option>
+                        <option value="java">Java</option>
                     </select>
                     <button id="createBtn" class="action-btn btn-green" style="flex: 0.6;">${t.ui_createBtn}</button>
                 </div>
