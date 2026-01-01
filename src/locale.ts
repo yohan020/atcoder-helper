@@ -13,6 +13,7 @@ export interface LocaleMessages {
     unsupportedFile: string;
     compilerCmdEmpty: string;
     selectProblemFirst: string;
+    apiKeyEmpty: string;
 
     // 출력 로그 (Output Channel)
     testingStart: string;
@@ -52,6 +53,7 @@ const MESSAGES: { [key: string]: LocaleMessages } = {
         unsupportedFile: '지원하지 않는 파일 형식입니다. (.py, .c, .cpp 만 지원)',
         compilerCmdEmpty: '컴파일러 명령어(cmd)가 비어있습니다.',
         selectProblemFirst: '먼저 문제를 선택해주세요.',
+        apiKeyEmpty: 'API 키가 비어있습니다.',
 
         testingStart: '테스트 시작',
         compiling: '컴파일 중...',
@@ -87,6 +89,7 @@ const MESSAGES: { [key: string]: LocaleMessages } = {
         unsupportedFile: 'Unsupported file type. (Only .py, .c, .cpp)',
         compilerCmdEmpty: 'Compiler command is empty.',
         selectProblemFirst: 'Please select a problem first.',
+        apiKeyEmpty: 'API key is empty.',
 
         testingStart: 'Testing',
         compiling: 'Compiling...',
@@ -122,6 +125,7 @@ const MESSAGES: { [key: string]: LocaleMessages } = {
         unsupportedFile: 'サポートされていないファイル形式です。(.py, .c, .cpp のみ)',
         compilerCmdEmpty: 'コンパイラコマンドが空です。',
         selectProblemFirst: '先に問題を選択してください。',
+        apiKeyEmpty: 'APIキーが空です。',
 
         testingStart: 'テスト開始',
         compiling: 'コンパイル中...',
