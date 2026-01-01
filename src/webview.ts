@@ -11,12 +11,29 @@ export function getHtmlForWebview(): string {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>AtCoder Helper</title>
             <style>
-                body { padding: 8px; font-family: sans-serif; display: flex; flex-direction: column; gap: 8px; }
-                .search-box { display: flex; gap: 3px; font-size: 0.85em; }
-                input { flex: 1; padding: 4px; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); }
-                button, select { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 8px; cursor: pointer; }
+                body { padding: 10px; font-family: sans-serif; display: flex; flex-direction: column; gap: 10px; }
+                
+                /* 공통 Input/Button 스타일 */
+                input { flex: 1; padding: 5px; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); }
+                button, select { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 6px 12px; cursor: pointer; }
                 button:hover, select:hover { background: var(--vscode-button-hoverBackground); }
                 select { padding: 6px; outline: none; border: 1px solid var(--vscode-widget-border); }
+                
+                /* 👇 [수정됨] 공통 섹션 컨테이너 스타일 (ABC/ADT 공용) */
+                .section-container { 
+                    display: flex; 
+                    flex-direction: column; 
+                    gap: 5px; 
+                    border: 1px solid var(--vscode-widget-border); 
+                    padding: 8px; 
+                    border-radius: 4px; 
+                }
+                .section-label { font-size: 0.8em; color: #888; margin-bottom: 2px; }
+                .section-row { display: flex; gap: 5px; align-items: center; }
+                
+                /* 구분선 */
+                hr { width: 100%; border: 0; border-top: 1px solid var(--vscode-widget-border); margin: 5px 0; }
+                
                 #taskList { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
                 .task-btn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: var(--vscode-editor-background); border: 1px solid var(--vscode-widget-border); cursor: pointer; }
                 .task-btn:hover { background: var(--vscode-list-hoverBackground); }
@@ -58,11 +75,37 @@ export function getHtmlForWebview(): string {
             </style>
         </head>
         <body>
-            <div class="search-box">
-                <span style="line-height:28px;">ABC</span>
-                <input type="text" id="contestId" placeholder="${t.ui_searchPlaceholder}" />
-                <button id="searchBtn">${t.ui_searchBtn}</button>
+            <div class="section-container">
+                <div class="section-label">${t.abcHeader}</div>
+                <div class="section-row">
+                    <span style="font-weight: bold; font-size: 0.9em; margin-right: 5px;">ABC</span>
+                    <input type="text" id="contestId" placeholder="${t.ui_searchPlaceholder}" />
+                    <button id="searchBtn">${t.ui_searchBtn}</button>
+                </div>
             </div>
+
+            <div class="section-container" style="margin-top: 10px;">
+                <div class="section-label">${t.adtHeader}</div>
+                <div class="section-row">
+                    <select id="adtDiff" style="flex: 1;">
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                        <option value="all">All</option>
+                    </select>
+                    <select id="adtNum" style="width: 50px;">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                    </select>
+                </div>
+                <div class="section-row">
+                    <input type="date" id="adtDate" style="flex: 1;">
+                    <button id="adtSearchBtn">${t.adtSearchBtn}</button>
+                </div>
+            </div>
+
+            <hr />
 
             <div id="taskList"></div>
 
@@ -97,6 +140,23 @@ export function getHtmlForWebview(): string {
                 document.getElementById('searchBtn').addEventListener('click', () => {
                     const id = document.getElementById('contestId').value;
                     if(id) vscode.postMessage({ command: 'loadContest', contestId: id });
+                });
+
+                document.getElementById('adtSearchBtn').addEventListener('click', () => {
+                    const diff = document.getElementById('adtDiff').value;
+                    const num = document.getElementById('adtNum').value;
+                    const dateVal = document.getElementById('adtDate').value; 
+
+                    if (!dateVal) return;
+
+                    const dateStr = dateVal.replace(/-/g, '');
+
+                    vscode.postMessage({ 
+                        command: 'loadAdtContest', 
+                        difficulty: diff,
+                        date: dateStr,
+                        number: num
+                    });
                 });
 
                 const probLangSelect = document.getElementById('problemLangSelect');
