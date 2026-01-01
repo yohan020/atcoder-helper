@@ -33,10 +33,24 @@
           ],
           "description": "Select the language for the AtCoder Helper extension"
         },
+        "atcoder-helper.translationModel": {
+          "type": "string",
+          "default": "Gemini (Google AI)",
+          "enum": [
+            "Gemini (Google AI)",
+            "ChatGPT (OpenAI)"
+          ],
+          "description": "Select translationModel. If the API key for the selected model is not configured, Google Translate will be used as fallback."
+        },
         "atcoder-helper.geminiApiKey": {
           "type": "string",
           "default": "",
           "description": "Gemini API Key for high-quality Korean translation. Get your key from https://aistudio.google.com/apikey"
+        },
+        "atcoder-helper.openaiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "OpenAI API Key for high-quality Korean translation. Get your key from https://platform.openai.com/api-keys"
         }
       }
     },

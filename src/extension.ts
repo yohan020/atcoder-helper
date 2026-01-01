@@ -6,7 +6,7 @@ import * as cheerio from 'cheerio';
 
 // 분리된 모듈 import
 import { SampleData, ProblemContent, TaskData } from './types';
-import { translateWithGemini, translateWithGoogle } from './translator';
+import { translateWithGemini, translateWithGoogle, translateWithChatGPT } from './translator';
 import { runPython, compileCode, runExecutable } from './compiler';
 import { getHtmlForWebview } from './webview';
 import { getLocalizedMessages } from './locale';
@@ -182,59 +182,8 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 			if (this._currentContent.ko) {
 				contentToShow = this._currentContent.ko;
 			} else {
-				const geminiApiKey = vscode.workspace.getConfiguration('atcoder-helper').get<string>('geminiApiKey');
-
-				if (geminiApiKey && geminiApiKey.trim() !== '') {
-					// Gemini API로 번역 (실패 시 Google Translate로 폴백)
-					vscode.window.withProgress({
-						location: vscode.ProgressLocation.Notification,
-						title: "Gemini로 번역 중입니다...",
-						cancellable: false
-					}, async () => {
-						try {
-							const translatedHtml = await translateWithGemini(this._currentContent.ja, geminiApiKey);
-							this._currentContent.ko = translatedHtml;
-							contentToShow = translatedHtml;
-						} catch (e: any) {
-							// Gemini 실패 시 Google Translate로 폴백
-							vscode.window.showWarningMessage(`Gemini 실패, Google Translate로 전환 중...`);
-							try {
-								const translatedHtml = await translateWithGoogle(this._currentContent.ja);
-								this._currentContent.ko = translatedHtml;
-								contentToShow = translatedHtml;
-							} catch {
-								vscode.window.showErrorMessage('번역 실패! 원문을 표시합니다.');
-								contentToShow = this._currentContent.ja;
-							}
-						}
-
-						this._view?.webview.postMessage({
-							type: 'updateProblemContent',
-							content: contentToShow
-						});
-					});
-				} else {
-					// Google Translate로 번역
-					vscode.window.withProgress({
-						location: vscode.ProgressLocation.Notification,
-						title: "한국어로 번역 중입니다... (1분 정도 소요)",
-						cancellable: false
-					}, async () => {
-						try {
-							const translatedHtml = await translateWithGoogle(this._currentContent.ja);
-							this._currentContent.ko = translatedHtml;
-							contentToShow = translatedHtml;
-						} catch (e) {
-							vscode.window.showErrorMessage('번역 실패! 원문을 표시합니다.');
-							contentToShow = this._currentContent.ja;
-						}
-
-						this._view?.webview.postMessage({
-							type: 'updateProblemContent',
-							content: contentToShow
-						});
-					});
-				}
+				// 별도 메소드로 분리된 번역 로직 호출
+				await this.translateToKorean();
 				return;
 			}
 		}
@@ -245,6 +194,72 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 		});
 	}
 
+	// ---- 기능 3-1: 한국어 번역 수행 ----
+	private async translateToKorean(): Promise<void> {
+		const config = vscode.workspace.getConfiguration('atcoder-helper');
+		const translationModel = config.get<string>('translationModel') || 'gemini';
+		const geminiApiKey = config.get<string>('geminiApiKey') || '';
+		const openaiApiKey = config.get<string>('openaiApiKey') || '';
+
+		// 선택된 모델에 맞는 API키 확인
+		let useAI = false;
+		let selectedApiKey = '';
+		let modelName = '';
+
+		if (translationModel === "Gemini (Google AI)" && geminiApiKey.trim() !== '') {
+			useAI = true;
+			selectedApiKey = geminiApiKey;
+			modelName = 'Gemini';
+		} else if (translationModel === "ChatGPT (OpenAI)" && openaiApiKey.trim() !== '') {
+			useAI = true;
+			selectedApiKey = openaiApiKey;
+			modelName = 'ChatGPT';
+		}
+
+		await vscode.window.withProgress({
+			location: vscode.ProgressLocation.Notification,
+			title: useAI ? `${modelName}로 번역 중...` : "한국어로 번역 중... (1분 정도 소요)",
+			cancellable: false
+		}, async () => {
+			let contentToShow = '';
+			try {
+				let translatedHtml = '';
+				if (useAI) {
+					// AI 번역 시도
+					if (modelName === 'Gemini') {
+						translatedHtml = await translateWithGemini(this._currentContent.ja, selectedApiKey);
+					} else {
+						translatedHtml = await translateWithChatGPT(this._currentContent.ja, selectedApiKey);
+					}
+				} else {
+					// Google Translate 사용
+					translatedHtml = await translateWithGoogle(this._currentContent.ja);
+				}
+				this._currentContent.ko = translatedHtml;
+				contentToShow = translatedHtml;
+			} catch (e: any) {
+				if (useAI) {
+					// AI 실패 시 Google Translate로 폴백
+					vscode.window.showWarningMessage(`${modelName} 실패, Google Translate로 전환 중...`);
+					try {
+						const translatedHtml = await translateWithGoogle(this._currentContent.ja);
+						this._currentContent.ko = translatedHtml;
+						contentToShow = translatedHtml;
+					} catch {
+						vscode.window.showErrorMessage('번역 실패! 원문을 표시합니다.');
+						contentToShow = this._currentContent.ja;
+					}
+				} else {
+					vscode.window.showErrorMessage('번역 실패! 원문을 표시합니다.');
+					contentToShow = this._currentContent.ja;
+				}
+			}
+			this._view?.webview.postMessage({
+				type: 'updateProblemContent',
+				content: contentToShow
+			});
+		});
+	}
 	// ---- 기능 4: 소스 코드 파일 생성 ----
 	private async createSourceFile(language: string) {
 		const t = getLocalizedMessages();
