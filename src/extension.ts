@@ -56,6 +56,9 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 				case 'loadContest':
 					await this.loadContest(data.contestId);
 					break;
+				case 'loadAdtContest':
+					await this.loadAdtContest(data.difficulty, data.date, data.number);
+					break;
 				case 'selectProblem':
 					await this.selectProblem(data.url);
 					break;
@@ -84,6 +87,54 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 		const t = getLocalizedMessages();
 		if (!contestId) return;
 		const listUrl = `https://atcoder.jp/contests/abc${contestId}/tasks`;
+
+		try {
+			const response = await axios.get(listUrl);
+			const $ = cheerio.load(response.data);
+
+			const tasks: TaskData[] = [];
+			$('tbody tr').each((i, el) => {
+				const linkTag = $(el).find('td').first().find('a');
+				const label = linkTag.text();
+				const href = linkTag.attr('href');
+				if (label && href) {
+					tasks.push({ label, url: `https://atcoder.jp${href}` });
+				}
+			});
+
+			if (tasks.length === 0) {
+				vscode.window.showErrorMessage(t.contestNotFound);
+				return;
+			}
+			this._currentTasks = tasks;
+			this._view?.webview.postMessage({ type: 'updateTaskList', tasks: tasks });
+		} catch (error) {
+			vscode.window.showErrorMessage(`${t.fetchError}: ${listUrl}`);
+		}
+	}
+
+	// ---- 기능 1-2: ADT 문제 불러오기
+	private async loadAdtContest(difficulty: string, date: string, number: string) {
+		const t = getLocalizedMessages();
+
+		// 1. 날짜 유효성 검사 (서버 사이드 체크)
+		// date 포맷 : YYYYMMDD
+		const year = parseInt(date.substring(0, 4));
+		const month = parseInt(date.substring(4, 6)) - 1;
+		const day = parseInt(date.substring(6, 8));
+		const selectedDate = new Date(year, month, day)
+
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+
+		if (selectedDate >= today) {
+			vscode.window.showErrorMessage(t.adtDateError);
+			return;
+		}
+
+		// 2. ADT URL 생성
+		const contestId = `adt_${difficulty}_${date}_${number}`;
+		const listUrl = `https://atcoder.jp/contests/${contestId}/tasks`;
 
 		try {
 			const response = await axios.get(listUrl);
