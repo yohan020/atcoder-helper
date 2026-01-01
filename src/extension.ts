@@ -7,7 +7,7 @@ import * as cheerio from 'cheerio';
 // 분리된 모듈 import
 import { SampleData, ProblemContent, TaskData } from './types';
 import { translateWithGemini, translateWithGoogle, translateWithChatGPT } from './translator';
-import { runPython, compileCode, runExecutable } from './compiler';
+import { runPython, compileCode, runExecutable, compileJava, runJava } from './compiler';
 import { getHtmlForWebview } from './webview';
 import { getLocalizedMessages } from './locale';
 
@@ -137,7 +137,12 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 			const inputs: { [key: number]: string } = {};
 			const outputs: { [key: number]: string } = {};
 
-			$('section').each((index, element) => {
+			// .lang-ja 섹션에서만 예제 파싱 (일본어/영어 중복 방지)
+			const targetSection = taskStatement.find('.lang-ja').length > 0
+				? taskStatement.find('.lang-ja')
+				: taskStatement;
+
+			targetSection.find('section').each((index, element) => {
 				const title = $(element).find('h3').text();
 				const content = $(element).find('pre').text();
 
@@ -280,6 +285,9 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 		} else if (language === 'python') {
 			fileName = 'solve.py';
 			template = 'import sys\n\ninput = sys.stdin.readline\ndef solve():\n    pass\n\nif __name__ == "__main__":\n    solve()';
+		} else if (language === 'java') {
+			fileName = 'solve.java';
+			template = `import java.util.*;\nimport java.io.*;\n\npublic class solve {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        \n    }\n}`;
 		}
 
 		const solvePath = path.join(rootPath, fileName);
@@ -298,6 +306,7 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 	}
 
 	// ---- 기능 5: 테스트 실행 ----
+	// 각종 컴파일 및 실행 로직
 	private async runTest() {
 		const t = getLocalizedMessages();
 		const editor = vscode.window.activeTextEditor;
@@ -320,6 +329,8 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 		outputChannel.appendLine(`-----------------------------------------`);
 
 		let executablePath = '';
+
+		// 1. 컴파일 단계 (C/C++, Java)
 		if (ext === '.c' || ext === '.cpp') {
 			try {
 				outputChannel.appendLine(`🔨 ${t.compiling}`);
@@ -330,8 +341,19 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 				outputChannel.appendLine(compileError.message);
 				return;
 			}
+		} else if (ext === '.java') {
+			try {
+				outputChannel.appendLine(`🔨 ${t.compiling}`);
+				executablePath = await compileJava(filePath);
+				outputChannel.appendLine(`✅ ${t.compileSuccess}`);
+			} catch (compileError: any) {
+				outputChannel.appendLine(`❌ ${t.compileFail}:`);
+				outputChannel.appendLine(compileError.message);
+				return;
+			}
 		}
 
+		// 2. 실행 단계 (Python, Java, C/C++)
 		let passCount = 0;
 		for (const sample of this._currentSamples) {
 			try {
@@ -340,6 +362,9 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 					actualOutput = (await runExecutable(executablePath, sample.input)).trim();
 				} else if (ext === '.py') {
 					actualOutput = (await runPython(filePath, sample.input)).trim();
+				} else if (ext === '.java') {
+					actualOutput = (await runJava(filePath, sample.input)).trim();
+
 				} else {
 					vscode.window.showErrorMessage(t.unsupportedFile);
 					return;
