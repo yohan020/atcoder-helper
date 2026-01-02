@@ -14,6 +14,7 @@ export interface LocaleMessages {
     compilerCmdEmpty: string;
     selectProblemFirst: string;
     apiKeyEmpty: string;
+    tsconfigMissing: string;
     abcHeader: string;
 
     // Atcoder Daily Training 관련
@@ -63,6 +64,7 @@ const MESSAGES: { [key: string]: LocaleMessages } = {
         compilerCmdEmpty: '컴파일러 명령어(cmd)가 비어있습니다.',
         selectProblemFirst: '먼저 문제를 선택해주세요.',
         apiKeyEmpty: 'API 키가 비어있습니다.',
+        tsconfigMissing: 'tsconfig.json 파일이 없습니다. 파일 생성 버튼을 눌러주세요.',
         abcHeader: 'Atcoder Beginner Contest (ABC)',
 
         adtHeader: 'Atcoder Daily Training (ADT)',
@@ -107,6 +109,7 @@ const MESSAGES: { [key: string]: LocaleMessages } = {
         compilerCmdEmpty: 'Compiler command is empty.',
         selectProblemFirst: 'Please select a problem first.',
         apiKeyEmpty: 'API key is empty.',
+        tsconfigMissing: 'tsconfig.json file is missing. Please click the Create File button.',
         abcHeader: 'Atcoder Beginner Contest (ABC)',
 
         adtHeader: 'Atcoder Daily Training (ADT)',
@@ -151,6 +154,7 @@ const MESSAGES: { [key: string]: LocaleMessages } = {
         compilerCmdEmpty: 'コンパイラコマンドが空です。',
         selectProblemFirst: '先に問題を選択してください。',
         apiKeyEmpty: 'APIキーが空です。',
+        tsconfigMissing: 'tsconfig.jsonファイルがありません。ファイル作成ボタンを押してください。',
         abcHeader: 'Atcoder Beginner Contest (ABC)',
 
         adtHeader: 'Atcoder Daily Training (ADT)',

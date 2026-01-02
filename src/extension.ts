@@ -7,7 +7,7 @@ import * as cheerio from 'cheerio';
 // 분리된 모듈 import
 import { SampleData, ProblemContent, TaskData } from './types';
 import { translateWithGemini, translateWithGoogle, translateWithChatGPT } from './translator';
-import { runPython, compileCode, runExecutable, compileJava, runJava } from './compiler';
+import { runPython, compileCode, runExecutable, compileJava, runJava, runJavaScript, runTypeScript, runGo, compileRust } from './compiler';
 import { getHtmlForWebview } from './webview';
 import { getLocalizedMessages } from './locale';
 
@@ -339,6 +339,18 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 		} else if (language === 'java') {
 			fileName = 'solve.java';
 			template = `import java.util.*;\nimport java.io.*;\n\npublic class solve {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        \n    }\n}`;
+		} else if (language === 'javascript') {
+			fileName = 'solve.js';
+			template = `const rl = require('readline').createInterface({ input: process.stdin });\nconst input = [];\nrl.on('line', line => input.push(line)).on('close', solve);\n\nfunction solve() {\n    \n}`;
+		} else if (language === 'typescript') {
+			fileName = 'solve.ts';
+			template = `import * as readline from 'readline';\nconst rl = readline.createInterface({ input: process.stdin });\nconst input: string[] = [];\nrl.on('line', (line: string) => input.push(line)).on('close', solve);\n\nfunction solve(): void {\n    \n}`;
+		} else if (language === 'go') {
+			fileName = 'solve.go';
+			template = `package main\n\nimport (\n    "bufio"\n    "fmt"\n    "os"\n)\n\nvar sc = bufio.NewScanner(os.Stdin)\n\nfunc main() {\n    \n}`;
+		} else if (language === 'rust') {
+			fileName = 'solve.rs';
+			template = `use std::io::*;\n\nfn main() {\n    let mut s = String::new();\n    stdin().read_line(&mut s).unwrap();\n    \n}`;
 		}
 
 		const solvePath = path.join(rootPath, fileName);
@@ -346,6 +358,16 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 		if (!fs.existsSync(solvePath)) {
 			fs.writeFileSync(solvePath, template);
 			vscode.window.showInformationMessage(`${fileName} ${t.fileCreated}`);
+		}
+
+		// TypeScript인 경우 tsconfig.json도 생성
+		if (language === 'typescript') {
+			const tsconfigPath = path.join(rootPath, 'tsconfig.json');
+			if (!fs.existsSync(tsconfigPath)) {
+				const tsconfig = `{\n  "compilerOptions": {\n    "target": "ES2020",\n    "module": "commonjs",\n    "strict": true,\n    "esModuleInterop": true,\n    "skipLibCheck": true,\n    "types": ["node"]\n  },\n  "include": ["*.ts"]\n}`;
+				fs.writeFileSync(tsconfigPath, tsconfig);
+				vscode.window.showInformationMessage(`tsconfig.json ${t.fileCreated}`);
+			}
 		}
 
 		try {
@@ -381,7 +403,7 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 
 		let executablePath = '';
 
-		// 1. 컴파일 단계 (C/C++, Java)
+		// 1. 컴파일 단계 (C/C++, Java, TypeScript, Rust)
 		if (ext === '.c' || ext === '.cpp') {
 			try {
 				outputChannel.appendLine(`🔨 ${t.compiling}`);
@@ -402,20 +424,43 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 				outputChannel.appendLine(compileError.message);
 				return;
 			}
+		} else if (ext === '.ts') {
+			// TypeScript: tsconfig.json 확인
+			const dir = path.dirname(filePath);
+			const tsconfigPath = path.join(dir, 'tsconfig.json');
+			if (!fs.existsSync(tsconfigPath)) {
+				vscode.window.showErrorMessage(t.tsconfigMissing);
+				return;
+			}
+		} else if (ext === '.rs') {
+			try {
+				outputChannel.appendLine(`🔨 ${t.compiling}`);
+				executablePath = await compileRust(filePath);
+				outputChannel.appendLine(`✅ ${t.compileSuccess}`);
+			} catch (compileError: any) {
+				outputChannel.appendLine(`❌ ${t.compileFail}:`);
+				outputChannel.appendLine(compileError.message);
+				return;
+			}
 		}
 
-		// 2. 실행 단계 (Python, Java, C/C++)
+		// 2. 실행 단계 (Python, Java, C/C++, Rust, Go, TypeScript, JavaScript)
 		let passCount = 0;
 		for (const sample of this._currentSamples) {
 			try {
 				let actualOutput = '';
-				if (ext === '.c' || ext === '.cpp') {
+				if (ext === '.c' || ext === '.cpp' || ext === '.rs') {
 					actualOutput = (await runExecutable(executablePath, sample.input)).trim();
 				} else if (ext === '.py') {
 					actualOutput = (await runPython(filePath, sample.input)).trim();
 				} else if (ext === '.java') {
 					actualOutput = (await runJava(filePath, sample.input)).trim();
-
+				} else if (ext === '.js') {
+					actualOutput = (await runJavaScript(filePath, sample.input)).trim();
+				} else if (ext === '.ts') {
+					actualOutput = (await runTypeScript(filePath, sample.input)).trim();
+				} else if (ext === '.go') {
+					actualOutput = (await runGo(filePath, sample.input)).trim();
 				} else {
 					vscode.window.showErrorMessage(t.unsupportedFile);
 					return;

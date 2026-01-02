@@ -127,6 +127,10 @@ export function getHtmlForWebview(): string {
                         <option value="cpp">C++</option>
                         <option value="c">C</option>
                         <option value="java">Java</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="typescript">TypeScript</option>
+                        <option value="go">Go</option>
+                        <option value="rust">Rust</option>
                     </select>
                     <button id="createBtn" class="action-btn btn-green" style="flex: 0.6;">${t.ui_createBtn}</button>
                 </div>
