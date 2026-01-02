@@ -92,3 +92,52 @@ export function runJava(sourcePath: string, input: string): Promise<string> {
         handleProcess(proc, input, resolve, reject);
     });
 }
+
+// JavaScript 실행
+export function runJavaScript(sourcePath: string, input: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const proc = cp.spawn('node', [sourcePath]);
+        handleProcess(proc, input, resolve, reject);
+    });
+}
+
+// TypeScript 실행
+export function runTypeScript(sourcePath: string, input: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        // Windows에서 .cmd 파일 실행 시 shell: true 필요
+        const proc = cp.spawn('npx', ['ts-node', sourcePath], {
+            shell: process.platform === 'win32'
+        });
+        handleProcess(proc, input, resolve, reject);
+    });
+}
+
+// Go 실행
+export function runGo(sourcePath: string, input: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const proc = cp.spawn('go', ['run', sourcePath]);
+        handleProcess(proc, input, resolve, reject);
+    });
+}
+
+// Rust 컴파일
+export function compileRust(sourcePath: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const dir = path.dirname(sourcePath);
+        const fileName = path.basename(sourcePath, '.rs');
+
+        // 윈도우는 .exe, 맥/리눅스는 확장자 없음
+        const outName = process.platform === 'win32' ? `${fileName}.exe` : fileName;
+        const outPath = path.join(dir, outName);
+
+        const args = [sourcePath, '-o', outPath];
+
+        cp.execFile('rustc', args, (error, stdout, stderr) => {
+            if (error) {
+                reject(new Error(stderr || stdout || error.message));
+            } else {
+                resolve(outPath);
+            }
+        });
+    });
+}
