@@ -6,28 +6,46 @@ function handleProcess(
     proc: cp.ChildProcessWithoutNullStreams,
     input: string,
     resolve: (value: string) => void,
-    reject: (reason?: any) => void
+    reject: (reason?: any) => void,
+    timeoutMs: number = 10000
 ) {
     let stdout = '', stderr = '';
+    let killed = false;
+
+    // 타임아웃 설정
+    const timer = setTimeout(() => {
+        killed = true;
+        proc.kill();
+        reject(new Error(`⏱️ Time Limit Exceeded (${timeoutMs / 1000}s)`));
+    }, timeoutMs);
     try {
         proc.stdin.write(input);
         proc.stdin.end();
-    } catch (e) { reject(e); }
+    } catch (e) {
+        clearTimeout(timer);
+        reject(e);
+    }
     proc.stdout.on('data', d => stdout += d);
     proc.stderr.on('data', d => stderr += d);
+
     proc.on('close', code => {
+        if (killed) return;
+        clearTimeout(timer);
         if (code === 0) resolve(stdout);
         else reject(new Error(stderr));
     });
-    proc.on('error', err => reject(err));
+    proc.on('error', err => {
+        clearTimeout(timer);
+        reject(err)
+    });
 }
 
 // Python 실행
-export function runPython(scriptPath: string, input: string): Promise<string> {
+export function runPython(scriptPath: string, input: string, timeoutMs: number = 10000): Promise<string> {
     return new Promise((resolve, reject) => {
         const cmd = process.platform === 'win32' ? 'python' : 'python3';
         const proc = cp.spawn(cmd, [scriptPath]);
-        handleProcess(proc, input, resolve, reject);
+        handleProcess(proc, input, resolve, reject, timeoutMs);
     });
 }
 
@@ -59,11 +77,11 @@ export function compileCode(sourcePath: string, ext: string): Promise<string> {
     });
 }
 
-// 컴파일된 실행 파일 실행 (C/C++)
-export function runExecutable(exePath: string, input: string): Promise<string> {
+// 컴파일된 실행 파일 실행 (C/C++, Rust)
+export function runExecutable(exePath: string, input: string, timeoutMs: number = 10000): Promise<string> {
     return new Promise((resolve, reject) => {
         const proc = cp.spawn(exePath);
-        handleProcess(proc, input, resolve, reject);
+        handleProcess(proc, input, resolve, reject, timeoutMs);
     });
 }
 
@@ -83,40 +101,40 @@ export function compileJava(sourcePath: string): Promise<string> {
 }
 
 // Java 실행
-export function runJava(sourcePath: string, input: string): Promise<string> {
+export function runJava(sourcePath: string, input: string, timeoutMs: number = 10000): Promise<string> {
     return new Promise((resolve, reject) => {
         const dir = path.dirname(sourcePath);
         const mainClass = path.basename(sourcePath, '.java');
 
         const proc = cp.spawn('java', ['-cp', dir, '-Dfile.encoding=UTF-8', mainClass]);
-        handleProcess(proc, input, resolve, reject);
+        handleProcess(proc, input, resolve, reject, timeoutMs);
     });
 }
 
 // JavaScript 실행
-export function runJavaScript(sourcePath: string, input: string): Promise<string> {
+export function runJavaScript(sourcePath: string, input: string, timeoutMs: number = 10000): Promise<string> {
     return new Promise((resolve, reject) => {
         const proc = cp.spawn('node', [sourcePath]);
-        handleProcess(proc, input, resolve, reject);
+        handleProcess(proc, input, resolve, reject, timeoutMs);
     });
 }
 
 // TypeScript 실행
-export function runTypeScript(sourcePath: string, input: string): Promise<string> {
+export function runTypeScript(sourcePath: string, input: string, timeoutMs: number = 10000): Promise<string> {
     return new Promise((resolve, reject) => {
         // Windows에서 .cmd 파일 실행 시 shell: true 필요
         const proc = cp.spawn('npx', ['ts-node', sourcePath], {
             shell: process.platform === 'win32'
         });
-        handleProcess(proc, input, resolve, reject);
+        handleProcess(proc, input, resolve, reject, timeoutMs);
     });
 }
 
 // Go 실행
-export function runGo(sourcePath: string, input: string): Promise<string> {
+export function runGo(sourcePath: string, input: string, timeoutMs: number = 10000): Promise<string> {
     return new Promise((resolve, reject) => {
         const proc = cp.spawn('go', ['run', sourcePath]);
-        handleProcess(proc, input, resolve, reject);
+        handleProcess(proc, input, resolve, reject, timeoutMs);
     });
 }
 
