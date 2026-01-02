@@ -15,52 +15,69 @@
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
-    "configuration": {
-      "title": "AtCoder Helper",
-      "properties": {
-        "atcoder-helper.language": {
-          "type": "string",
-          "default": "ko",
-          "enum": [
-            "ko",
-            "en",
-            "ja"
-          ],
-          "enumDescriptions": [
-            "Korean (한국어)",
-            "English (영어)",
-            "Japanese (日本語)"
-          ],
-          "description": "Select the language for the AtCoder Helper extension"
-        },
-        "atcoder-helper.translationModel": {
-          "type": "string",
-          "default": "Gemini (Google AI)",
-          "enum": [
-            "Gemini (Google AI)",
-            "ChatGPT (OpenAI)"
-          ],
-          "description": "Select translationModel. If the API key for the selected model is not configured, Google Translate will be used as fallback."
-        },
-        "atcoder-helper.geminiApiKey": {
-          "type": "string",
-          "default": "",
-          "description": "Gemini API Key for high-quality Korean translation. Get your key from https://aistudio.google.com/apikey"
-        },
-        "atcoder-helper.openaiApiKey": {
-          "type": "string",
-          "default": "",
-          "description": "OpenAI API Key for high-quality Korean translation. Get your key from https://platform.openai.com/api-keys"
-        },
-        "atcoder-helper.timeoutSeconds": {
-          "type": "number",
-          "default": 10,
-          "minimum": 1,
-          "maximum": 60,
-          "description": "Timeout in seconds for each test case execution (default: 10s)"
+    "configuration": [
+      {
+        "title": "AtCoder Helper - General",
+        "properties": {
+          "atcoder-helper.language": {
+            "order": 1,
+            "type": "string",
+            "default": "ko",
+            "enum": [
+              "ko",
+              "en",
+              "ja"
+            ],
+            "enumDescriptions": [
+              "Korean (한국어)",
+              "English (영어)",
+              "Japanese (日本語)"
+            ],
+            "markdownDescription": "🌐 Select the **display language** for the AtCoder Helper extension"
+          }
+        }
+      },
+      {
+        "title": "AtCoder Helper - Translation",
+        "properties": {
+          "atcoder-helper.translationModel": {
+            "order": 1,
+            "type": "string",
+            "default": "Gemini (Google AI)",
+            "enum": [
+              "Gemini (Google AI)",
+              "ChatGPT (OpenAI)"
+            ],
+            "markdownDescription": "🤖 Select the **AI model** for problem translation. If the API key is not configured, Google Translate will be used as fallback."
+          },
+          "atcoder-helper.geminiApiKey": {
+            "order": 2,
+            "type": "string",
+            "default": "",
+            "markdownDescription": "🔑 **Gemini API Key** for high-quality Korean translation. [Get your key here](https://aistudio.google.com/apikey)"
+          },
+          "atcoder-helper.openaiApiKey": {
+            "order": 3,
+            "type": "string",
+            "default": "",
+            "markdownDescription": "🔑 **OpenAI API Key** for ChatGPT translation. [Get your key here](https://platform.openai.com/api-keys)"
+          }
+        }
+      },
+      {
+        "title": "AtCoder Helper - Execution",
+        "properties": {
+          "atcoder-helper.timeoutSeconds": {
+            "order": 1,
+            "type": "number",
+            "default": 10,
+            "minimum": 1,
+            "maximum": 60,
+            "markdownDescription": "⏱️ **Timeout** in seconds for each test case execution *(1-60s, default: 10s)*"
+          }
         }
       }
-    },
+    ],
     "viewsContainers": {
       "activitybar": [
         {

@@ -48,6 +48,7 @@ export interface LocaleMessages {
     ui_testBtn: string;
     ui_webBtn: string;
     ui_testBtnRunning: string; // 테스트 실행 중 텍스트
+    ui_settingsBtn: string;
 }
 
 const MESSAGES: { [key: string]: LocaleMessages } = {
@@ -94,7 +95,8 @@ const MESSAGES: { [key: string]: LocaleMessages } = {
         ui_createBtn: '📄 파일 열기/생성',
         ui_testBtn: '▶️ 테스트 실행',
         ui_webBtn: '🌐 웹사이트에서 보기 (Original)',
-        ui_testBtnRunning: '▶️ 테스트 실행'
+        ui_testBtnRunning: '▶️ 테스트 실행',
+        ui_settingsBtn: '⚙️ 설정'
     },
     en: {
         folderError: 'Please open a folder first!',
@@ -139,7 +141,8 @@ const MESSAGES: { [key: string]: LocaleMessages } = {
         ui_createBtn: '📄 Open/Create File',
         ui_testBtn: '▶️ Run Test',
         ui_webBtn: '🌐 Open Website (Original)',
-        ui_testBtnRunning: '▶️ Run Test'
+        ui_testBtnRunning: '▶️ Run Test',
+        ui_settingsBtn: '⚙️ Settings'
     },
     ja: {
         folderError: 'フォルダを開いてください！',
@@ -184,7 +187,8 @@ const MESSAGES: { [key: string]: LocaleMessages } = {
         ui_createBtn: '📄 ファイル作成/開く',
         ui_testBtn: '▶️ テスト実行',
         ui_webBtn: '🌐 Webサイトで見る',
-        ui_testBtnRunning: '▶️ テスト実行'
+        ui_testBtnRunning: '▶️ テスト実行',
+        ui_settingsBtn: '⚙️ 設定'
     }
 };
 
