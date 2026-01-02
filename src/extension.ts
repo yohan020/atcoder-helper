@@ -78,6 +78,9 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 						vscode.window.showErrorMessage(t.selectProblemFirst);
 					}
 					break;
+				case 'openSettings':
+					await vscode.commands.executeCommand('workbench.action.openSettings', '@atcoder-helper');
+					break;
 			}
 		});
 	}

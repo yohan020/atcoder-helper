@@ -72,6 +72,24 @@ export function getHtmlForWebview(): string {
                 .btn-green { background-color: #28a745; color: white; }
                 .btn-blue { background-color: #007acc; color: white; }
                 .btn-gray { background-color: #555; color: white; }
+                
+                /* Settings Button */
+                .settings-btn { 
+                    margin-top: 15px; 
+                    padding: 8px; 
+                    background: transparent; 
+                    border: 1px dashed var(--vscode-widget-border); 
+                    color: var(--vscode-descriptionForeground); 
+                    font-size: 0.85em;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 5px;
+                }
+                .settings-btn:hover { 
+                    background: var(--vscode-list-hoverBackground); 
+                    border-style: solid;
+                }
             </style>
         </head>
         <body>
@@ -138,6 +156,8 @@ export function getHtmlForWebview(): string {
                 <button id="openWebBtn" class="action-btn btn-gray" style="display:none;">${t.ui_webBtn}</button>
             </div>
 
+            <button id="settingsBtn" class="settings-btn">${t.ui_settingsBtn}</button>
+
             <script>
                 const vscode = acquireVsCodeApi();
 
@@ -179,6 +199,10 @@ export function getHtmlForWebview(): string {
 
                 document.getElementById('openWebBtn').addEventListener('click', () => {
                     vscode.postMessage({ command: 'openBrowser' });
+                });
+
+                document.getElementById('settingsBtn').addEventListener('click', () => {
+                    vscode.postMessage({ command: 'openSettings' });
                 });
 
                 window.addEventListener('message', event => {
