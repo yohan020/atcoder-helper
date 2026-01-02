@@ -396,6 +396,10 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 			return;
 		}
 
+		// 설정에서 타임아웃 값 읽기 (밀리초로 변환)
+		const timeoutSeconds = vscode.workspace.getConfiguration('atcoder-helper').get<number>('timeoutSeconds', 10);
+		const timeoutMs = timeoutSeconds * 1000;
+
 		outputChannel.clear();
 		outputChannel.show(true);
 		outputChannel.appendLine(`🚀 ${t.testingStart}: ${path.basename(filePath)} (${ext})`);
@@ -450,17 +454,17 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 			try {
 				let actualOutput = '';
 				if (ext === '.c' || ext === '.cpp' || ext === '.rs') {
-					actualOutput = (await runExecutable(executablePath, sample.input)).trim();
+					actualOutput = (await runExecutable(executablePath, sample.input, timeoutMs)).trim();
 				} else if (ext === '.py') {
-					actualOutput = (await runPython(filePath, sample.input)).trim();
+					actualOutput = (await runPython(filePath, sample.input, timeoutMs)).trim();
 				} else if (ext === '.java') {
-					actualOutput = (await runJava(filePath, sample.input)).trim();
+					actualOutput = (await runJava(filePath, sample.input, timeoutMs)).trim();
 				} else if (ext === '.js') {
-					actualOutput = (await runJavaScript(filePath, sample.input)).trim();
+					actualOutput = (await runJavaScript(filePath, sample.input, timeoutMs)).trim();
 				} else if (ext === '.ts') {
-					actualOutput = (await runTypeScript(filePath, sample.input)).trim();
+					actualOutput = (await runTypeScript(filePath, sample.input, timeoutMs)).trim();
 				} else if (ext === '.go') {
-					actualOutput = (await runGo(filePath, sample.input)).trim();
+					actualOutput = (await runGo(filePath, sample.input, timeoutMs)).trim();
 				} else {
 					vscode.window.showErrorMessage(t.unsupportedFile);
 					return;
