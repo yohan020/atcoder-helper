@@ -6,8 +6,8 @@ import * as cheerio from 'cheerio';
 
 // 분리된 모듈 import
 import { SampleData, ProblemContent, TaskData } from './types';
-import { translateWithGemini, translateWithGoogle } from './translator';
-import { runPython, compileCode, runExecutable } from './compiler';
+import { translateWithGemini, translateWithGoogle, translateWithChatGPT } from './translator';
+import { runPython, compileCode, runExecutable, compileJava, runJava, runJavaScript, runTypeScript, runGo, compileRust } from './compiler';
 import { getHtmlForWebview } from './webview';
 import { getLocalizedMessages } from './locale';
 
@@ -55,6 +55,9 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 			switch (data.command) {
 				case 'loadContest':
 					await this.loadContest(data.contestId);
+					break;
+				case 'loadAdtContest':
+					await this.loadAdtContest(data.difficulty, data.date, data.number);
 					break;
 				case 'selectProblem':
 					await this.selectProblem(data.url);
@@ -110,6 +113,54 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 		}
 	}
 
+	// ---- 기능 1-2: ADT 문제 불러오기
+	private async loadAdtContest(difficulty: string, date: string, number: string) {
+		const t = getLocalizedMessages();
+
+		// 1. 날짜 유효성 검사 (서버 사이드 체크)
+		// date 포맷 : YYYYMMDD
+		const year = parseInt(date.substring(0, 4));
+		const month = parseInt(date.substring(4, 6)) - 1;
+		const day = parseInt(date.substring(6, 8));
+		const selectedDate = new Date(year, month, day)
+
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+
+		if (selectedDate >= today) {
+			vscode.window.showErrorMessage(t.adtDateError);
+			return;
+		}
+
+		// 2. ADT URL 생성
+		const contestId = `adt_${difficulty}_${date}_${number}`;
+		const listUrl = `https://atcoder.jp/contests/${contestId}/tasks`;
+
+		try {
+			const response = await axios.get(listUrl);
+			const $ = cheerio.load(response.data);
+
+			const tasks: TaskData[] = [];
+			$('tbody tr').each((i, el) => {
+				const linkTag = $(el).find('td').first().find('a');
+				const label = linkTag.text();
+				const href = linkTag.attr('href');
+				if (label && href) {
+					tasks.push({ label, url: `https://atcoder.jp${href}` });
+				}
+			});
+
+			if (tasks.length === 0) {
+				vscode.window.showErrorMessage(t.contestNotFound);
+				return;
+			}
+			this._currentTasks = tasks;
+			this._view?.webview.postMessage({ type: 'updateTaskList', tasks: tasks });
+		} catch (error) {
+			vscode.window.showErrorMessage(`${t.fetchError}: ${listUrl}`);
+		}
+	}
+
 	// ---- 기능 2: 문제 선택 및 데이터 파싱 ----
 	private async selectProblem(url: string) {
 		const t = getLocalizedMessages();
@@ -137,7 +188,12 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 			const inputs: { [key: number]: string } = {};
 			const outputs: { [key: number]: string } = {};
 
-			$('section').each((index, element) => {
+			// .lang-ja 섹션에서만 예제 파싱 (일본어/영어 중복 방지)
+			const targetSection = taskStatement.find('.lang-ja').length > 0
+				? taskStatement.find('.lang-ja')
+				: taskStatement;
+
+			targetSection.find('section').each((index, element) => {
 				const title = $(element).find('h3').text();
 				const content = $(element).find('pre').text();
 
@@ -182,59 +238,8 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 			if (this._currentContent.ko) {
 				contentToShow = this._currentContent.ko;
 			} else {
-				const geminiApiKey = vscode.workspace.getConfiguration('atcoder-helper').get<string>('geminiApiKey');
-
-				if (geminiApiKey && geminiApiKey.trim() !== '') {
-					// Gemini API로 번역 (실패 시 Google Translate로 폴백)
-					vscode.window.withProgress({
-						location: vscode.ProgressLocation.Notification,
-						title: "Gemini로 번역 중입니다...",
-						cancellable: false
-					}, async () => {
-						try {
-							const translatedHtml = await translateWithGemini(this._currentContent.ja, geminiApiKey);
-							this._currentContent.ko = translatedHtml;
-							contentToShow = translatedHtml;
-						} catch (e: any) {
-							// Gemini 실패 시 Google Translate로 폴백
-							vscode.window.showWarningMessage(`Gemini 실패, Google Translate로 전환 중...`);
-							try {
-								const translatedHtml = await translateWithGoogle(this._currentContent.ja);
-								this._currentContent.ko = translatedHtml;
-								contentToShow = translatedHtml;
-							} catch {
-								vscode.window.showErrorMessage('번역 실패! 원문을 표시합니다.');
-								contentToShow = this._currentContent.ja;
-							}
-						}
-
-						this._view?.webview.postMessage({
-							type: 'updateProblemContent',
-							content: contentToShow
-						});
-					});
-				} else {
-					// Google Translate로 번역
-					vscode.window.withProgress({
-						location: vscode.ProgressLocation.Notification,
-						title: "한국어로 번역 중입니다... (1분 정도 소요)",
-						cancellable: false
-					}, async () => {
-						try {
-							const translatedHtml = await translateWithGoogle(this._currentContent.ja);
-							this._currentContent.ko = translatedHtml;
-							contentToShow = translatedHtml;
-						} catch (e) {
-							vscode.window.showErrorMessage('번역 실패! 원문을 표시합니다.');
-							contentToShow = this._currentContent.ja;
-						}
-
-						this._view?.webview.postMessage({
-							type: 'updateProblemContent',
-							content: contentToShow
-						});
-					});
-				}
+				// 별도 메소드로 분리된 번역 로직 호출
+				await this.translateToKorean();
 				return;
 			}
 		}
@@ -245,6 +250,72 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 		});
 	}
 
+	// ---- 기능 3-1: 한국어 번역 수행 ----
+	private async translateToKorean(): Promise<void> {
+		const config = vscode.workspace.getConfiguration('atcoder-helper');
+		const translationModel = config.get<string>('translationModel') || 'gemini';
+		const geminiApiKey = config.get<string>('geminiApiKey') || '';
+		const openaiApiKey = config.get<string>('openaiApiKey') || '';
+
+		// 선택된 모델에 맞는 API키 확인
+		let useAI = false;
+		let selectedApiKey = '';
+		let modelName = '';
+
+		if (translationModel === "Gemini (Google AI)" && geminiApiKey.trim() !== '') {
+			useAI = true;
+			selectedApiKey = geminiApiKey;
+			modelName = 'Gemini';
+		} else if (translationModel === "ChatGPT (OpenAI)" && openaiApiKey.trim() !== '') {
+			useAI = true;
+			selectedApiKey = openaiApiKey;
+			modelName = 'ChatGPT';
+		}
+
+		await vscode.window.withProgress({
+			location: vscode.ProgressLocation.Notification,
+			title: useAI ? `${modelName}로 번역 중...` : "한국어로 번역 중... (1분 정도 소요)",
+			cancellable: false
+		}, async () => {
+			let contentToShow = '';
+			try {
+				let translatedHtml = '';
+				if (useAI) {
+					// AI 번역 시도
+					if (modelName === 'Gemini') {
+						translatedHtml = await translateWithGemini(this._currentContent.ja, selectedApiKey);
+					} else {
+						translatedHtml = await translateWithChatGPT(this._currentContent.ja, selectedApiKey);
+					}
+				} else {
+					// Google Translate 사용
+					translatedHtml = await translateWithGoogle(this._currentContent.ja);
+				}
+				this._currentContent.ko = translatedHtml;
+				contentToShow = translatedHtml;
+			} catch (e: any) {
+				if (useAI) {
+					// AI 실패 시 Google Translate로 폴백
+					vscode.window.showWarningMessage(`${modelName} 실패, Google Translate로 전환 중...`);
+					try {
+						const translatedHtml = await translateWithGoogle(this._currentContent.ja);
+						this._currentContent.ko = translatedHtml;
+						contentToShow = translatedHtml;
+					} catch {
+						vscode.window.showErrorMessage('번역 실패! 원문을 표시합니다.');
+						contentToShow = this._currentContent.ja;
+					}
+				} else {
+					vscode.window.showErrorMessage('번역 실패! 원문을 표시합니다.');
+					contentToShow = this._currentContent.ja;
+				}
+			}
+			this._view?.webview.postMessage({
+				type: 'updateProblemContent',
+				content: contentToShow
+			});
+		});
+	}
 	// ---- 기능 4: 소스 코드 파일 생성 ----
 	private async createSourceFile(language: string) {
 		const t = getLocalizedMessages();
@@ -265,6 +336,21 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 		} else if (language === 'python') {
 			fileName = 'solve.py';
 			template = 'import sys\n\ninput = sys.stdin.readline\ndef solve():\n    pass\n\nif __name__ == "__main__":\n    solve()';
+		} else if (language === 'java') {
+			fileName = 'solve.java';
+			template = `import java.util.*;\nimport java.io.*;\n\npublic class solve {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        \n    }\n}`;
+		} else if (language === 'javascript') {
+			fileName = 'solve.js';
+			template = `const rl = require('readline').createInterface({ input: process.stdin });\nconst input = [];\nrl.on('line', line => input.push(line)).on('close', solve);\n\nfunction solve() {\n    \n}`;
+		} else if (language === 'typescript') {
+			fileName = 'solve.ts';
+			template = `import * as readline from 'readline';\nconst rl = readline.createInterface({ input: process.stdin });\nconst input: string[] = [];\nrl.on('line', (line: string) => input.push(line)).on('close', solve);\n\nfunction solve(): void {\n    \n}`;
+		} else if (language === 'go') {
+			fileName = 'solve.go';
+			template = `package main\n\nimport (\n    "bufio"\n    "fmt"\n    "os"\n)\n\nvar sc = bufio.NewScanner(os.Stdin)\n\nfunc main() {\n    \n}`;
+		} else if (language === 'rust') {
+			fileName = 'solve.rs';
+			template = `use std::io::*;\n\nfn main() {\n    let mut s = String::new();\n    stdin().read_line(&mut s).unwrap();\n    \n}`;
 		}
 
 		const solvePath = path.join(rootPath, fileName);
@@ -272,6 +358,16 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 		if (!fs.existsSync(solvePath)) {
 			fs.writeFileSync(solvePath, template);
 			vscode.window.showInformationMessage(`${fileName} ${t.fileCreated}`);
+		}
+
+		// TypeScript인 경우 tsconfig.json도 생성
+		if (language === 'typescript') {
+			const tsconfigPath = path.join(rootPath, 'tsconfig.json');
+			if (!fs.existsSync(tsconfigPath)) {
+				const tsconfig = `{\n  "compilerOptions": {\n    "target": "ES2020",\n    "module": "commonjs",\n    "strict": true,\n    "esModuleInterop": true,\n    "skipLibCheck": true,\n    "types": ["node"]\n  },\n  "include": ["*.ts"]\n}`;
+				fs.writeFileSync(tsconfigPath, tsconfig);
+				vscode.window.showInformationMessage(`tsconfig.json ${t.fileCreated}`);
+			}
 		}
 
 		try {
@@ -283,6 +379,7 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 	}
 
 	// ---- 기능 5: 테스트 실행 ----
+	// 각종 컴파일 및 실행 로직
 	private async runTest() {
 		const t = getLocalizedMessages();
 		const editor = vscode.window.activeTextEditor;
@@ -305,6 +402,8 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 		outputChannel.appendLine(`-----------------------------------------`);
 
 		let executablePath = '';
+
+		// 1. 컴파일 단계 (C/C++, Java, TypeScript, Rust)
 		if (ext === '.c' || ext === '.cpp') {
 			try {
 				outputChannel.appendLine(`🔨 ${t.compiling}`);
@@ -315,16 +414,53 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 				outputChannel.appendLine(compileError.message);
 				return;
 			}
+		} else if (ext === '.java') {
+			try {
+				outputChannel.appendLine(`🔨 ${t.compiling}`);
+				executablePath = await compileJava(filePath);
+				outputChannel.appendLine(`✅ ${t.compileSuccess}`);
+			} catch (compileError: any) {
+				outputChannel.appendLine(`❌ ${t.compileFail}:`);
+				outputChannel.appendLine(compileError.message);
+				return;
+			}
+		} else if (ext === '.ts') {
+			// TypeScript: tsconfig.json 확인
+			const dir = path.dirname(filePath);
+			const tsconfigPath = path.join(dir, 'tsconfig.json');
+			if (!fs.existsSync(tsconfigPath)) {
+				vscode.window.showErrorMessage(t.tsconfigMissing);
+				return;
+			}
+		} else if (ext === '.rs') {
+			try {
+				outputChannel.appendLine(`🔨 ${t.compiling}`);
+				executablePath = await compileRust(filePath);
+				outputChannel.appendLine(`✅ ${t.compileSuccess}`);
+			} catch (compileError: any) {
+				outputChannel.appendLine(`❌ ${t.compileFail}:`);
+				outputChannel.appendLine(compileError.message);
+				return;
+			}
 		}
 
+		// 2. 실행 단계 (Python, Java, C/C++, Rust, Go, TypeScript, JavaScript)
 		let passCount = 0;
 		for (const sample of this._currentSamples) {
 			try {
 				let actualOutput = '';
-				if (ext === '.c' || ext === '.cpp') {
+				if (ext === '.c' || ext === '.cpp' || ext === '.rs') {
 					actualOutput = (await runExecutable(executablePath, sample.input)).trim();
 				} else if (ext === '.py') {
 					actualOutput = (await runPython(filePath, sample.input)).trim();
+				} else if (ext === '.java') {
+					actualOutput = (await runJava(filePath, sample.input)).trim();
+				} else if (ext === '.js') {
+					actualOutput = (await runJavaScript(filePath, sample.input)).trim();
+				} else if (ext === '.ts') {
+					actualOutput = (await runTypeScript(filePath, sample.input)).trim();
+				} else if (ext === '.go') {
+					actualOutput = (await runGo(filePath, sample.input)).trim();
 				} else {
 					vscode.window.showErrorMessage(t.unsupportedFile);
 					return;

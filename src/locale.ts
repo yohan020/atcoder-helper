@@ -13,6 +13,17 @@ export interface LocaleMessages {
     unsupportedFile: string;
     compilerCmdEmpty: string;
     selectProblemFirst: string;
+    apiKeyEmpty: string;
+    tsconfigMissing: string;
+    abcHeader: string;
+
+    // Atcoder Daily Training 관련
+    adtHeader: string;
+    adtDiff: string;
+    adtDate: string;
+    adtNum: string;
+    adtSearchBtn: string;
+    adtDateError: string;
 
     // 출력 로그 (Output Channel)
     testingStart: string;
@@ -52,6 +63,16 @@ const MESSAGES: { [key: string]: LocaleMessages } = {
         unsupportedFile: '지원하지 않는 파일 형식입니다. (.py, .c, .cpp 만 지원)',
         compilerCmdEmpty: '컴파일러 명령어(cmd)가 비어있습니다.',
         selectProblemFirst: '먼저 문제를 선택해주세요.',
+        apiKeyEmpty: 'API 키가 비어있습니다.',
+        tsconfigMissing: 'tsconfig.json 파일이 없습니다. 파일 생성 버튼을 눌러주세요.',
+        abcHeader: 'Atcoder Beginner Contest (ABC)',
+
+        adtHeader: 'Atcoder Daily Training (ADT)',
+        adtDiff: '난이도',
+        adtDate: '날짜',
+        adtNum: '회차',
+        adtSearchBtn: '조회',
+        adtDateError: '오늘 이전의 날짜만 조회할 수 있습니다 (미래/오늘 제외).',
 
         testingStart: '테스트 시작',
         compiling: '컴파일 중...',
@@ -66,7 +87,7 @@ const MESSAGES: { [key: string]: LocaleMessages } = {
         resultSummary: '정답 갯수',
         resultRatio: '정답률',
 
-        ui_searchPlaceholder: '386',
+        ui_searchPlaceholder: '123',
         ui_searchBtn: '조회',
         ui_selectProblemPrompt: '문제를 선택하세요.',
         ui_loading: '불러오는 중...',
@@ -87,6 +108,16 @@ const MESSAGES: { [key: string]: LocaleMessages } = {
         unsupportedFile: 'Unsupported file type. (Only .py, .c, .cpp)',
         compilerCmdEmpty: 'Compiler command is empty.',
         selectProblemFirst: 'Please select a problem first.',
+        apiKeyEmpty: 'API key is empty.',
+        tsconfigMissing: 'tsconfig.json file is missing. Please click the Create File button.',
+        abcHeader: 'Atcoder Beginner Contest (ABC)',
+
+        adtHeader: 'Atcoder Daily Training (ADT)',
+        adtDiff: 'Difficulty',
+        adtDate: 'Date',
+        adtNum: 'Session',
+        adtSearchBtn: 'Search',
+        adtDateError: 'You can only search for previous dates.',
 
         testingStart: 'Testing',
         compiling: 'Compiling...',
@@ -101,7 +132,7 @@ const MESSAGES: { [key: string]: LocaleMessages } = {
         resultSummary: 'Correct Answers',
         resultRatio: 'Accuracy',
 
-        ui_searchPlaceholder: '386',
+        ui_searchPlaceholder: '123',
         ui_searchBtn: 'Search',
         ui_selectProblemPrompt: 'Select a problem.',
         ui_loading: 'Loading...',
@@ -122,6 +153,16 @@ const MESSAGES: { [key: string]: LocaleMessages } = {
         unsupportedFile: 'サポートされていないファイル形式です。(.py, .c, .cpp のみ)',
         compilerCmdEmpty: 'コンパイラコマンドが空です。',
         selectProblemFirst: '先に問題を選択してください。',
+        apiKeyEmpty: 'APIキーが空です。',
+        tsconfigMissing: 'tsconfig.jsonファイルがありません。ファイル作成ボタンを押してください。',
+        abcHeader: 'Atcoder Beginner Contest (ABC)',
+
+        adtHeader: 'Atcoder Daily Training (ADT)',
+        adtDiff: '難易度',
+        adtDate: '日付',
+        adtNum: '回',
+        adtSearchBtn: '検索',
+        adtDateError: '過去の日付のみ検索可能です。',
 
         testingStart: 'テスト開始',
         compiling: 'コンパイル中...',
@@ -136,7 +177,7 @@ const MESSAGES: { [key: string]: LocaleMessages } = {
         resultSummary: '正解数',
         resultRatio: '正解率',
 
-        ui_searchPlaceholder: '386',
+        ui_searchPlaceholder: '123',
         ui_searchBtn: '検索',
         ui_selectProblemPrompt: '問題を選択してください。',
         ui_loading: '読み込み中...',
