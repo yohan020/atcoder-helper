@@ -5,7 +5,7 @@
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)
 
 > 일본을 포함한 외국에서 주로 사용하는 알고리즘 문제 풀이 사이트 [AtCoder](https://atcoder.jp/)에서 좀 더 문제를 풀기 쉽게 도와주는 VS Code 확장 프로그램
-
+[Japanese README](https://github.com/yohan020/atcoder-helper/blob/main/README_JP.md)
 ## 📸 스크린샷
 
 <img width="322" height="613" alt="AtCoder Helper Screenshot" src="https://github.com/user-attachments/assets/09b42bc5-d5f7-4a85-8b8a-93ae318d31fe" />
