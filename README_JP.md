@@ -9,7 +9,8 @@
 
 ## 📸 スクリーンショット
 
-<img width="322" height="613" alt="AtCoder Helper Screenshot" src="https://github.com/user-attachments/assets/09b42bc5-d5f7-4a85-8b8a-93ae318d31fe" />
+<img width="344" height="660" alt="image" src="https://github.com/user-attachments/assets/dde66b0a-5949-4bcc-85d5-17b14d173234" />
+
 
 ## ✨ 主な機能
 
