@@ -26,7 +26,7 @@
 | C++ | `.cpp` |
 | Java | `.java` |
 | JavaScript | `.js` |
-| TypeScript | [.ts](cci:7://file:///c:/Users/yohan/Desktop/project/atcoder-helper/atcoder-helper/src/locale.ts:0:0-0:0) |
+| TypeScript | `.ts` |
 | Go | `.go` |
 | Rust | `.rs` |
 
