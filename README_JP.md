@@ -34,7 +34,7 @@
 
 ## 📦 インストール方法
 
-> ⚠️ 現在 AtCoder 側に問い合わせ中です。問題がなければ正式リリース予定です。
+> https://marketplace.visualstudio.com/items?itemName=YOHANLEE.atcoder-toolkit
 
 ## 📖 使い方
 
