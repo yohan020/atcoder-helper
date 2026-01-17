@@ -32,7 +32,7 @@
 
 ## 📦 설치 방법
 
-> ⚠️ 현재 AtCoder 측에 문의를 한 상태이며, 문제가 없을 경우 정식 배포할 예정입니다.
+> https://marketplace.visualstudio.com/items?itemName=YOHANLEE.atcoder-toolkit
 
 ## 📖 사용 방법
 
