@@ -1,8 +1,13 @@
 {
-  "name": "atcoder-helper",
-  "displayName": "atcoder-helper",
+  "name": "atcoder-toolkit",
+  "displayName": "AtCoder Toolkit",
   "description": "AtCoder helper extension",
-  "version": "0.0.1",
+  "version": "0.0.4",
+  "publisher": "YOHANLEE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yohan020/atcoder-helper"
+  },
   "engines": {
     "vscode": "^1.104.0"
   },

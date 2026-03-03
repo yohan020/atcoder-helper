@@ -473,16 +473,23 @@ class AtCoderSidebarProvider implements vscode.WebviewViewProvider {
 					return;
 				}
 
-				const expectedOutput = sample.output.trim();
-				if (actualOutput === expectedOutput) {
+				const expectedOutput = sample.output.trim().replace(/\r\n/g, '\n');
+				const normalizedActual = actualOutput.replace(/\r\n/g, '\n');
+				if (normalizedActual === expectedOutput) {
 					outputChannel.appendLine(`✅ Case ${sample.id}: ${t.casePass}`);
-					outputChannel.appendLine(`  [${t.expected}] ${expectedOutput}`);
-					outputChannel.appendLine(`  [${t.actual}] ${actualOutput}`);
+					outputChannel.appendLine(`[${t.expected}]`);
+					outputChannel.appendLine(expectedOutput);
+					outputChannel.appendLine('');
+					outputChannel.appendLine(`[${t.actual}]`);
+					outputChannel.appendLine(normalizedActual);
 					passCount++;
 				} else {
 					outputChannel.appendLine(`❌ Case ${sample.id}: ${t.caseFail}`);
-					outputChannel.appendLine(`  [${t.expected}] ${expectedOutput}`);
-					outputChannel.appendLine(`  [${t.actual}] ${actualOutput}`);
+					outputChannel.appendLine(`[${t.expected}]`);
+					outputChannel.appendLine(expectedOutput);
+					outputChannel.appendLine('');
+					outputChannel.appendLine(`[${t.actual}]`);
+					outputChannel.appendLine(normalizedActual);
 				}
 				outputChannel.appendLine(`-----------------------------------------`);
 			} catch (err: any) {
