@@ -1,4 +1,4 @@
-# 💻 AtCoder Helper
+# 💻 AtCoder Helper (AtCoder Toolkit)
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![VS Code](https://img.shields.io/badge/VS%20Code-1.104%2B-blue.svg)
@@ -32,7 +32,7 @@
 
 ## 📦 설치 방법
 
-> https://marketplace.visualstudio.com/items?itemName=YOHANLEE.atcoder-toolkit
+> ⚠️ 현재 AtCoder 측에 문의를 한 상태이며, 문제가 없을 경우 정식 배포할 예정입니다.
 
 ## 📖 사용 방법
 
@@ -82,7 +82,23 @@ VS Code 설정 페이지 또는 사이드바의 **⚙️ 설정** 버튼을 통�
 - macOS/Linux 환경 테스트 진행 중
 - 일부 특수 문자가 포함된 문제에서 파싱 오류 가능성
 
-## 👤 작성자
+## � 업데이트 기록
+
+### v0.0.4 (2026-03-03)
+- 리드미 파일 수정
+
+### v0.0.3 (2026-03-03)
+- 🔧 테스트 결과 출력 포맷 개선 — `[정답]`과 `[실제]` 값을 각각 별도 줄에 표시하여 가독성 향상
+- 🐛 멀티라인 출력 비교 버그 수정 — 2줄 이상의 출력이 정답과 동일해도 오답으로 처리되던 문제 해결 (Windows 줄바꿈 정규화)
+
+### v0.0.2
+- ✨ ChatGPT 번역 지원 추가
+- ✨ AtCoder Daily Training (ADT) 문제 조회 기능 추가
+
+### v0.0.1
+- 🎉 최초 릴리스
+
+## �👤 작성자
 
 - GitHub: [@yohan020](https://github.com/yohan020)
 
